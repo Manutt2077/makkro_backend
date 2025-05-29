@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String @id @default(uuid())
+  user_id     String @unique
+  name        String
+  password    String
+  weight      Float?
+  age         Int?
+  email       String @unique
+  img_profile String?
+
+  // Relaciones
+  routines         Routine[]
+  sentFriendships  Friendship[] @relation("UserFriendships")
+  receivedFriendships Friendship[] @relation("FriendFriendships")
+
+  @@map("user")
+}
+
+model Friendship {
+  status    FriendshipStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  // Claves foráneas que forman la PK compuesta
+  userId   String
+  friendId String
+
+  // Relaciones
+  user   User @relation("UserFriendships", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("FriendFriendships", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@id([userId, friendId])
+  @@map("friendship")
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+}
+
+model Routine {
+  id           String   @id @default(uuid())
+  name         String
+  created_date DateTime @default(now())
+  finish_day   DateTime?
+  is_public    Boolean   @default(true)
+
+  // Clave foránea
+  userId String
+
+  // Relaciones
+  user         User                 @relation(fields: [userId], references: [id])
+  days         Day[]
+  dayExercises RoutineDayExercise[]
+
+  @@map("routine")
+}
+
+model Day {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  // Clave foránea
+  routineId String
+
+  // Relaciones
+  routine      Routine              @relation(fields: [routineId], references: [id])
+  dayExercises RoutineDayExercise[]
+
+  @@map("day")
+}
+
+model Muscle {
+  name String @id
+
+  // Relaciones
+  exercises ExerciseMuscle[] // Muchos a muchos
+
+  @@map("muscle")
+}
+
+model Exercise {
+  id          Int     @id @default(autoincrement())
+  ex_img      String?
+  description String?
+  type        String
+  difficult   String
+  ex_vid      String?
+
+  // Relaciones
+  dayRoutines RoutineDayExercise[]
+  muscles     ExerciseMuscle[]     // Muchos a muchos
+  equipment   ExerciseEquipment[]  // Muchos a muchos
+
+  @@map("exercise")
+}
+
+model Equipment {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  // Relaciones
+  exercises ExerciseEquipment[] // Muchos a muchos
+
+  @@map("equipment")
+}
+
+// Tabla intermedia para relación N:M de Exercise y Equipment
+model ExerciseEquipment {
+  exerciseId  Int
+  equipmentId Int
+
+  exercise  Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@id([exerciseId, equipmentId])
+  @@map("exercise_equipment")
+}
+
+// Tabla intermedia para la relación N:M entre Exercise y Muscle
+model ExerciseMuscle {
+  exerciseId Int
+  muscleName String
+
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  muscle   Muscle   @relation(fields: [muscleName], references: [name], onDelete: Cascade)
+
+  @@id([exerciseId, muscleName])
+  @@map("exercise_muscle")
+}
+
+// Tabla intermedia para relación ternaria Routine-Day-Exercise
+model RoutineDayExercise {
+  reps Int
+  sets Int
+
+  // Claves foráneas (clave primaria compuesta)
+  routineId  String
+  dayId      Int
+  exerciseId Int
+
+  // Relaciones
+  routine  Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  day      Day      @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@id([routineId, dayId, exerciseId])
+  @@map("routine_day_exercise")
+}
