@@ -7,6 +7,9 @@ const { loginUser } = require('../controllers/User/loginController');
 const { updateUser } = require('../controllers/User/updateController');
 const { requestEmailChangeController } = require('../controllers/User/emailChangeController');
 const { confirmEmailChangeController } = require('../controllers/User/confirmEmailChangeController');
+//controlador de actualización de contraseña
+const { updatePasswordController } = require('../controllers/User/updatePasswordController');
+
 // Middleware de validación
 const validateRegister = require('../middleware/User/registerMiddleware');
 const authMiddleware = require('../middleware/User/authMiddleware');
@@ -20,5 +23,8 @@ router.post('/profile/email/change',authMiddleware, requestEmailChangeController
 
 //confirmar cambio de correo electrónico
 router.get('/profile/email/confirm', confirmEmailChangeController);
+
+//actualizar contraseña
+router.patch('/profile/password/update', authMiddleware, updatePasswordController);
 
 module.exports = router;
