@@ -1,9 +1,7 @@
 const request = require('supertest');
-const { PrismaClient } = require('@prisma/client');
+const { prisma } = require('../../src/config/prismaClient');
 const bcrypt = require('bcrypt');
 const app = require('../../src/app'); // Tu app de Express
-
-const prisma = new PrismaClient();
 
 
 beforeEach(async () => {
@@ -48,8 +46,7 @@ describe('Tests de inicio de sesión de usuarios', () => {
         name: 'Test User',
         email: 'test123213@gmail.com',
         password: hashedPassword,
-        // Añadir otros campos necesarios según tu esquema
-        user_id: 'test2', // UUID ejemplo
+        user_id: 'test2', 
         weight: 70,
         age: 30
       }
@@ -85,7 +82,7 @@ it('debería iniciar sesión correctamente con credenciales válidas', async () 
   expect(res.statusCode).toBe(200);
   expect(res.body).toHaveProperty('token');
   expect(res.body).toHaveProperty('user');
-  expect(res.body.user).toHaveProperty('id'); // Cambiar de 'user_id' a 'id'
+  expect(res.body.user).toHaveProperty('id'); 
   expect(res.body.user).toHaveProperty('name', 'Test User');
   expect(res.body.user).toHaveProperty('email', 'test4@gmail.com');
 });

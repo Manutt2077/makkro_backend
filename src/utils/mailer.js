@@ -1,14 +1,14 @@
 const nodemailer = require('nodemailer');
-// Load environment variables from .env file
+
 require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
-    //usa las variables de entorno de tu proyecto
+
   host: process.env.MAIL_HOST,
   port: process.env.MAIL_PORT,
   auth: {
-    user: process.env.MAIL_USER,       // <-- tu username
-    pass: process.env.MAIL_PASS  // <-- pon aquí la contraseña completa que se oculta con ****e8ee
+    user: process.env.MAIL_USER,       
+    pass: process.env.MAIL_PASS  
   }
 });
 

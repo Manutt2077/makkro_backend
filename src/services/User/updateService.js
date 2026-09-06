@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { prisma } = require('../../config/prismaClient');
 
 const updateUser = async (userId, updateData) => {
   const user = await prisma.user.findUnique({ where: { user_id: userId } });
@@ -10,10 +9,10 @@ const updateUser = async (userId, updateData) => {
     throw error;
   }
 
-  // Campos no actualizables desde esta ruta
+
   delete updateData.user_id;
   delete updateData.password;
-  delete updateData.email; // opcional: solo actualizable con verificación
+  delete updateData.email; 
 
   const allowedFields = ['name', 'weight', 'age', 'img_profile'];
   const safeUpdateData = {};

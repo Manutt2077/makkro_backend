@@ -2,17 +2,22 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
+const errorHandler = require('./middleware/errorHandlerMiddleware'); // <-- Asegúrate de que la ruta esté bien
 
-// Middleware
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Importas todas las rutas desde el index principal
+// Rutas
 const routes = require('./routes');
-app.use('/api', routes);  // Aquí se monta TODO, ej: /api/users/login, /api/routines, etc.
+app.use('/api', routes);  // Todas las rutas van montadas aquí
 
+// Ruta base de prueba
 app.get('/', (req, res) => {
   res.send('API funcionando');
 });
+
+
+app.use(errorHandler);
 
 module.exports = app;

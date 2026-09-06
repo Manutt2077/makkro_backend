@@ -1,26 +1,25 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client"
+  engineType = "client"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
-  id          String @id @default(uuid())
-  user_id     String @unique
-  name        String
-  password    String
-  weight      Float?
-  age         Int?
-  email       String @unique
-  img_profile String?
-
-  // Relaciones
-  routines         Routine[]
-  sentFriendships  Friendship[] @relation("UserFriendships")
+  id                  String       @id @default(uuid())
+  user_id             String       @unique
+  name                String
+  password            String
+  weight              Float?
+  age                 Int?
+  email               String       @unique
+  img_profile         String?
   receivedFriendships Friendship[] @relation("FriendFriendships")
+  sentFriendships     Friendship[] @relation("UserFriendships")
+  routines            Routine[]
+  workoutSessions     WorkoutSession[] 
 
   @@map("user")
 }
@@ -29,17 +28,103 @@ model Friendship {
   status    FriendshipStatus @default(PENDING)
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
-
-  // Claves foráneas que forman la PK compuesta
-  userId   String
-  friendId String
-
-  // Relaciones
-  user   User @relation("UserFriendships", fields: [userId], references: [id], onDelete: Cascade)
-  friend User @relation("FriendFriendships", fields: [friendId], references: [id], onDelete: Cascade)
+  userId    String
+  friendId  String
+  friend    User             @relation("FriendFriendships", fields: [friendId], references: [id], onDelete: Cascade)
+  user      User             @relation("UserFriendships", fields: [userId], references: [user_id], onDelete: Cascade)
 
   @@id([userId, friendId])
   @@map("friendship")
+}
+
+model Routine {
+  id           String               @id @default(uuid())
+  name         String
+  created_date DateTime             @default(now())
+  finish_day   DateTime?
+  is_public    Boolean              @default(true)
+  userId       String
+  user         User                 @relation(fields: [userId], references: [user_id])
+  dayExercises RoutineDayExercise[]
+
+  @@map("routine")
+}
+
+model Day {
+  id           Int                  @id @default(autoincrement())
+  name         String               @unique
+  dayExercises RoutineDayExercise[]
+
+  @@map("day")
+}
+
+model Muscle {
+  id        Int              @id @default(autoincrement())
+  name      String           @unique
+  exercises ExerciseMuscle[]
+
+  @@map("muscle")
+}
+
+model Exercise {
+  id          Int                  @id @default(autoincrement())
+  ex_img      String?
+  description String
+  name        String               @unique
+  type        String
+  ex_vid      String?
+  equipment   ExerciseEquipment[]
+  muscles     ExerciseMuscle[]
+  dayRoutines RoutineDayExercise[]
+
+  @@map("exercise")
+}
+
+model Equipment {
+  id        Int                 @id @default(autoincrement())
+  name      String              @unique
+  exercises ExerciseEquipment[]
+
+  @@map("equipment")
+}
+
+model ExerciseEquipment {
+  exerciseId  Int
+  equipmentId Int
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  exercise    Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@id([exerciseId, equipmentId])
+  @@map("exercise_equipment")
+}
+
+model ExerciseMuscle {
+  exerciseId Int
+  muscleId   Int
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  muscle     Muscle   @relation(fields: [muscleId], references: [id], onDelete: Cascade)
+
+  @@id([exerciseId, muscleId])
+  @@map("exercise_muscle")
+}
+
+model RoutineDayExercise {
+  reps       Int
+  sets       Int
+  weight     Float?
+  rest       Int?
+  routineId  String
+  dayId      Int
+  exerciseId Int
+  day        Day      @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  routine    Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+
+  
+  sessions   SessionExercise[]
+
+  @@id([routineId, dayId, exerciseId])
+  @@map("routine_day_exercise")
 }
 
 enum FriendshipStatus {
@@ -47,112 +132,50 @@ enum FriendshipStatus {
   ACCEPTED
 }
 
-model Routine {
+model SessionExercise {
   id           String   @id @default(uuid())
-  name         String
-  created_date DateTime @default(now())
-  finish_day   DateTime?
-  is_public    Boolean   @default(true)
 
-  // Clave foránea
-  userId String
+  sessionId    String
+  routineId    String
+  dayId        Int
+  exerciseId   Int
 
-  // Relaciones
-  user         User                 @relation(fields: [userId], references: [id])
-  days         Day[]
-  dayExercises RoutineDayExercise[]
+  session             WorkoutSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  routineDayExercise  RoutineDayExercise  @relation(fields: [routineId, dayId, exerciseId], references: [routineId, dayId, exerciseId], onDelete: Cascade)
 
-  @@map("routine")
+  sets         SetLog[]
+
+  @@map("session_exercise")
 }
 
-model Day {
-  id   Int    @id @default(autoincrement())
-  name String
+model SetLog {
+  id                String          @id @default(uuid())
+  setNumber         Int
+  repsDone          Int?
+  weightDone        Float?
+  restSeconds       Int?
 
-  // Clave foránea
-  routineId String
+  sessionExerciseId String
+  sessionExercise   SessionExercise @relation(fields: [sessionExerciseId], references: [id], onDelete: Cascade)
 
-  // Relaciones
-  routine      Routine              @relation(fields: [routineId], references: [id])
-  dayExercises RoutineDayExercise[]
-
-  @@map("day")
+  @@unique([sessionExerciseId, setNumber])
+  @@map("set_log")
 }
 
-model Muscle {
-  name String @id
+model WorkoutSession {
+  id          String            @id @default(uuid())
+  date        DateTime          @db.Date
+  status      SessionStatus     @default(COMPLETED)
+  duration    Int?              // segundos totales
+  userId      String
+  user        User              @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  exercises   SessionExercise[]
 
-  // Relaciones
-  exercises ExerciseMuscle[] // Muchos a muchos
-
-  @@map("muscle")
+  @@unique([userId, date])
+  @@map("workout_session")
 }
 
-model Exercise {
-  id          Int     @id @default(autoincrement())
-  ex_img      String?
-  description String?
-  type        String
-  difficult   String
-  ex_vid      String?
-
-  // Relaciones
-  dayRoutines RoutineDayExercise[]
-  muscles     ExerciseMuscle[]     // Muchos a muchos
-  equipment   ExerciseEquipment[]  // Muchos a muchos
-
-  @@map("exercise")
-}
-
-model Equipment {
-  id   Int    @id @default(autoincrement())
-  name String
-
-  // Relaciones
-  exercises ExerciseEquipment[] // Muchos a muchos
-
-  @@map("equipment")
-}
-
-// Tabla intermedia para relación N:M de Exercise y Equipment
-model ExerciseEquipment {
-  exerciseId  Int
-  equipmentId Int
-
-  exercise  Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-
-  @@id([exerciseId, equipmentId])
-  @@map("exercise_equipment")
-}
-
-// Tabla intermedia para la relación N:M entre Exercise y Muscle
-model ExerciseMuscle {
-  exerciseId Int
-  muscleName String
-
-  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-  muscle   Muscle   @relation(fields: [muscleName], references: [name], onDelete: Cascade)
-
-  @@id([exerciseId, muscleName])
-  @@map("exercise_muscle")
-}
-
-// Tabla intermedia para relación ternaria Routine-Day-Exercise
-model RoutineDayExercise {
-  reps Int
-  sets Int
-
-  // Claves foráneas (clave primaria compuesta)
-  routineId  String
-  dayId      Int
-  exerciseId Int
-
-  // Relaciones
-  routine  Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
-  day      Day      @relation(fields: [dayId], references: [id], onDelete: Cascade)
-  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-
-  @@id([routineId, dayId, exerciseId])
-  @@map("routine_day_exercise")
+enum SessionStatus {
+  COMPLETED
+  SKIPPED
 }

@@ -1,8 +1,6 @@
 const request = require('supertest');
-const { PrismaClient } = require('@prisma/client');
-const app = require('../../src/app'); // Tu app de Express
-
-const prisma = new PrismaClient();
+const { prisma } = require('../../src/config/prismaClient');
+const app = require('../../src/app'); 
 
 beforeEach(async () => {
   // Limpiar usuarios antes de cada test
@@ -18,7 +16,7 @@ describe('Tests registro de usuarios', () => {
   it('debería rechazar si faltan campos obligatorios', async () => {
     const res = await request(app)
       .post('/api/users/register')
-      .send({ email: 'ejemplo@test.com' }); // Falta el resto
+      .send({ email: 'ejemplo@test.com' });
 
     expect(res.statusCode).toBe(400);
     expect(res.body).toHaveProperty('error');
@@ -51,7 +49,7 @@ describe('Tests registro de usuarios', () => {
       age: 30,
     });
 
-    console.log('Respuesta del segundo intento:', res2.body); // Útil para depuración
+    console.log('Respuesta del segundo intento:', res2.body); 
 
     expect(res2.statusCode).toBe(400);
     expect(res2.body).toHaveProperty('error', 'Este email ya está registrado');
@@ -163,7 +161,7 @@ it('debería registrar un usuario sin los campos weight y age', async () => {
   expect(user?.weight).toBeNull();
   expect(user?.age).toBeNull();
 
-  // 🔴 Limpieza: eliminar el usuario creado
+  // Limpieza: eliminar el usuario creado
   await prisma.user.delete({
     where: { email: 'test231232132@gmail.com' },
   });

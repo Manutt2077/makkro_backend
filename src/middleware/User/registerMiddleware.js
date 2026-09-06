@@ -6,7 +6,7 @@ const validateRegisterMiddleware = (req, res, next) => {
     return res.status(400).json({ error });
   }
 
-  next(); // continúa al siguiente middleware o al controlador
+  next(); 
 };
 
 module.exports = validateRegisterMiddleware;

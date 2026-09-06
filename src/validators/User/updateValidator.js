@@ -20,7 +20,7 @@ const validateUpdate = (data) => {
         return 'Introduce una edad válida';
     }
     
-    //no se valida img_profil
+    
 }
 
 module.exports = { validateUpdate };
